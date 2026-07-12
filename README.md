@@ -47,4 +47,4 @@ GNU General Public License v3.0 — 和 PyClaw 一致。
 
 ---
 
-*Code&Campus匠心制作*
+*Codex&Campus匠心制作*

@@ -8,3 +8,6 @@ history/
 # Personal data
 memory/
 
+# Session logs (full conversation history)
+session_*.jsonl
+
