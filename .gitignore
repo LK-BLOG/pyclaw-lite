@@ -1,0 +1,10 @@
+﻿pyclaw.json
+skills/
+__pycache__/
+*.pyc
+
+history/
+
+# Personal data
+memory/
+
