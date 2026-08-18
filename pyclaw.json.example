@@ -1,5 +1,9 @@
-﻿{
+{
     "ENDPOINT":  "https://opencode.ai/zen/v1",
     "API_KEY":  "your-api-key-here",
-    "MODEL":  "deepseek-v4-flash-free"
+    "MODEL":  "deepseek-v4-flash-free",
+    "WEBUI_PORT":  8765,
+    "WEBUI_HOST":  "127.0.0.1",
+    "WEBUI_TOKEN":  "",
+    "WEBUI_EXEC_BLOCKED":  []
 }

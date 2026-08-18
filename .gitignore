@@ -1,5 +1,6 @@
 ﻿pyclaw.json
-skills/
+skills/*
+!skills/.gitkeep
 __pycache__/
 *.pyc
 

@@ -94,6 +94,13 @@ body{ background:var(--bg); color:var(--text); font-family:var(--font);
 <script>
 const SYSP_STR = __SYSP_RAW__;
 const msgs = [{role:'system', content: SYSP_STR}];
+let apiToken = localStorage.getItem('pyclaw_lite_token') || '';
+// token 配在 pyclaw.json 的 WEBUI_TOKEN，重启服务不会变；这里只是让浏览器记住
+function promptToken(){
+  apiToken = prompt('需要 token（pyclaw.json 里的 WEBUI_TOKEN）：') || '';
+  if(apiToken) localStorage.setItem('pyclaw_lite_token', apiToken);
+  return apiToken;
+}
 const msgArea = document.getElementById('messages');
 const input = document.getElementById('input');
 const sendBtn = document.getElementById('send-btn');
@@ -124,7 +131,7 @@ function loadMessages(){
     var loaded=JSON.parse(saved);
     for(var m of loaded){
       if(m.role==='user') addMsg('user','<div class="content">'+escapeHtml(m.content)+'</div>','User '+ts());
-      else if(m.role==='assistant') addMsg('assistant','<div class="content">'+marked.parse(m.content||'')+'</div>','Agent '+ts());
+      else if(m.role==='assistant') addMsg('assistant','<div class="content">'+marked.parse(scrubToolXml(m.content||''))+'</div>','Agent '+ts());
       msgs.push(m);
     }
     scrollBottom();
@@ -140,11 +147,17 @@ function startAssistantMsg(){
   div.innerHTML='<div class="meta">Agent '+ts()+'</div><div class="content typing"></div>';
   msgArea.appendChild(div);
   scrollBottom(); currentMsgDiv=div; return div; }
+function scrubToolXml(s){
+  // 兜底：后端没解析掉的工具调用 XML 标签，转义成文本，别让 marked 吃标签
+  return s.replace(/<\/?(tool_calls|invoke|parameter|result)[^>]*>/g, function(t){
+    return t.replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  });
+}
 function appendDelta(text){
   currentText+=text;
   const contentDiv=currentMsgDiv.querySelector('.content');
   if(contentDiv){
-    contentDiv.innerHTML=marked.parse(currentText);
+    contentDiv.innerHTML=marked.parse(scrubToolXml(currentText));
     contentDiv.classList.remove('typing');
     contentDiv.classList.add('typing');
     scrollBottom(); } }
@@ -152,7 +165,7 @@ function finalizeMsg(){
   if(!currentMsgDiv) return;
   const contentDiv=currentMsgDiv.querySelector('.content');
   if(contentDiv){
-    contentDiv.innerHTML=marked.parse(currentText||'(no response)');
+    contentDiv.innerHTML=marked.parse(scrubToolXml(currentText||'(no response)'));
     contentDiv.classList.remove('typing'); }
   currentMsgDiv=null; currentText=''; }
 function setLoading(v){
@@ -166,11 +179,29 @@ async function sendMessage(){
   addMsg('user', '<div class="content">'+escapeHtml(text)+'</div>', 'User '+ts());
   setLoading(true);
   try{
-    const resp=await fetch('/api/chat', {
+    let resp=await fetch('/api/chat', {
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:{'Content-Type':'application/json','X-Auth-Token':apiToken},
       body:JSON.stringify({messages:msgs.slice(1)})
     });
+    if(resp.status===401){
+      localStorage.removeItem('pyclaw_lite_token'); apiToken='';
+      const t=promptToken();
+      if(!t){
+        addMsg('error','<div class="content">没有 token，请求被拒绝</div>','Error');
+        setLoading(false); return;
+      }
+      resp=await fetch('/api/chat', {
+        method:'POST',
+        headers:{'Content-Type':'application/json','X-Auth-Token':apiToken},
+        body:JSON.stringify({messages:msgs.slice(1)})
+      });
+      if(resp.status===401){
+        localStorage.removeItem('pyclaw_lite_token'); apiToken='';
+        addMsg('error','<div class="content">token 无效（检查 pyclaw.json 的 WEBUI_TOKEN）</div>','Error');
+        setLoading(false); return;
+      }
+    }
     const reader=resp.body.getReader();
     const decoder=new TextDecoder();
     let buf='';
@@ -204,6 +235,13 @@ async function sendMessage(){
             if(last){ const rd=last.querySelector('.tool-result');
               if(rd) rd.innerHTML=escapeHtml(ev.text||'(done)'); }
             scrollBottom(); break;
+          case 'confirm_request':
+            (function(ev){
+              const allow=confirm('PyClaw 请求执行危险命令：\n\n'+ev.command+'\n\n是否放行？');
+              fetch('/api/confirm',{method:'POST',
+                headers:{'Content-Type':'application/json','X-Auth-Token':apiToken},
+                body:JSON.stringify({id:ev.id,allow:allow})}).catch(function(){});
+            })(ev); break;
          case 'assistant':
            if(!hasAssistant){ startAssistantMsg(); hasAssistant=true; }
             currentText=ev.text||'';
