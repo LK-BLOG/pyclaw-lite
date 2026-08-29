@@ -59,6 +59,18 @@ def extract_text_cmd(text):
     rc = params.get("requires_confirmation", "").strip().lower() == "true"
     return cmd, rc
 
+def run_cmd(cmd):
+    try:
+        proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        out = ''.join(proc.stdout)
+        proc.wait(timeout=300)
+        return "[exit {}] {}".format(proc.returncode, out.strip())
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        return "[timeout 300s]"
+    except Exception as e:
+        return "[error: {}]".format(e)
+
 def build_sysp(webui=False):
     """Build system prompt with current memory contents."""
     mem_dir = HERE / "memory"
@@ -69,20 +81,17 @@ def build_sysp(webui=False):
                 body = f.read_text(encoding="utf-8", errors="replace").strip()
                 if body:
                     blocks.append(f"== {f.relative_to(mem_dir)} ==\n{body}")
+    plat = platform.system()
     base = (
-        "You are PyClaw Lite. You have one tool: exec. Do everything through it \u2014 "
-        "install packages, write files, scrape, analyze. For complex or reusable logic, "
-        f"save to skills/. Available skills: {skill_list}"
-        "\n\nYou have persistent memory in memory/. Read files there to remember "
-        "past context. Write to them when you learn something about the user or the workspace. "
-        "Use exec with shell commands to read/write memory files at any time."
-        f"\n\nPlatform: {platform.system()} {platform.release()}."
-        " Memory directory: memory/ under the project root, which is your current "
-        "working directory. Use relative paths from there "
-        "(e.g. memory\\notes\\file.txt on Windows, memory/notes/file.txt on Linux)."
-        " Use the native shell syntax for this platform: on Windows use cmd.exe syntax "
-        "(no bash heredoc '<<', no /tmp paths); on Linux/macOS use bash."
-        " Never invent or hardcode absolute paths - the project can live anywhere."
+        # 第一行就是核心指令：你要用 exec
+        "When the user asks you to do something, call the exec tool with the appropriate shell command. "
+        "Never respond with a plan or explanation when you should be executing.\n\n"
+        f"You are PyClaw Lite on {plat} {platform.release()}. "
+        f"Skills: [{skill_list}]. "
+        "Save reusable logic to skills/. "
+        "memory/ is your persistent storage — read/write files there via exec."
+        " Use relative paths from the project root. "
+        + ("Use cmd.exe syntax." if plat == "Windows" else "Use bash syntax.")
     )
     if webui:
         base += (
@@ -104,8 +113,6 @@ def build_sysp(webui=False):
     if blocks:
         return base + "\n\n## Your Memory\n" + "\n\n".join(blocks)
     return base
-
-
 # === CLI mode ===
 def run_cli():
     """Start interactive CLI chat."""
@@ -188,24 +195,11 @@ def run_cli():
                 cmd = json.loads(tc.function.arguments)["command"]
                 log_msg("exec", cmd)
                 print(f"Exec {ts()}\n     > {cmd}", flush=True)
-                try:
-                    proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-                    out_lines = []
-                    while True:
-                        line = proc.stdout.readline()
-                        if not line: break
-                        print(f"     > {line.rstrip()}", flush=True)
-                        out_lines.append(line)
-                    proc.wait(timeout=300)
-                    out = "[exit {}]\n{}".format(proc.returncode, "".join(out_lines).strip())
-                except subprocess.TimeoutExpired:
-                    proc.kill()
-                    out = "[timeout 300s]"
-                except Exception as e:
-                    out = f"[error: {e}]"
+                out = run_cmd(cmd)
                 log_msg("tool", out)
                 print(f"     > {out}", flush=True)
                 msgs.append({"role":"tool","tool_call_id":tc.id,"content":out})
 
 if __name__ == "__main__":
     run_cli()
+
