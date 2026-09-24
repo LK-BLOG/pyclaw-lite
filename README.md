@@ -41,26 +41,6 @@ python main.py
 | `ENDPOINT` | API 端点 URL（兼容 OpenAI 格式） |
 | `MODEL` | 模型名称 |
 
-## WebUI（实验性）
-
-```bash
-python webui.py
-```
-
-| 字段 | 默认 | 说明 |
-|------|------|------|
-| `WEBUI\_PORT` | `8765` | 端口 |
-| `WEBUI\_HOST` | `127.0.0.1` | 只监听本机；\*\*改成 `0.0.0.0` 等于把 shell 暴露给整个网络\*\* |
-| `WEBUI\_TOKEN` | 空 | 留空时仅本机能访问；绑到非本机地址时必须设置，否则拒绝启动 |
-| `WEBUI\_CONFIRM\_TIMEOUT` | `120` | 危险命令确认弹窗的等待秒数，超时默认拒绝 |
-
-WebUI 里 AI 会通过 `exec` 执行命令，且 AI 会先按上下文审核：普通命令直接执行；
-破坏性/不可逆操作（批量删除、覆盖、force-push、把远程脚本管道给 shell 等）只有你在对话里明确授权才会执行，
-否则 AI 调用 `exec` 时会带上 `requires_confirmation=true`，页面弹出确认框，你点放行才跑。
-命中内置黑名单（`rm -rf /`、格式化、关机等，可用 `WEBUI_EXEC_BLOCKED` 追加）的命令同样会弹确认框。
-确认超时默认 120 秒，可用 `WEBUI_CONFIRM_TIMEOUT` 调整。
-默认只绑回环、只有本机能连；非要对外暴露，必须配 `WEBUI_TOKEN`。
-
 ## 许可证
 
 GNU General Public License v3.0 — 和 PyClaw 一致。
