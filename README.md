@@ -24,9 +24,28 @@ AI 可以把复杂或可复用的逻辑保存到 `skills/` 目录下。下次启
 ## 使用
 
 ```bash
-pip install openai
-cp pyclaw.json.example pyclaw.json   # 填入你的 API Key 和 Endpoint
-python main.py
+./install.sh                          # 装依赖 + 建目录,可反复跑
+cp pyclaw.json.example pyclaw.json    # 填入你的 API Key 和 Endpoint
+python main.py                        # 进 TUI
+```
+
+`install.sh` 会装三个运行时依赖：
+
+| 包 | 用途 |
+|------|------|
+| `openai` | API 调用（唯一必需） |
+| `prompt_toolkit` + `rich` | TUI 界面。只用 `--plain` 的话可以不装 |
+
+手动装也行：`pip install openai prompt_toolkit rich`
+
+## 长期记忆
+
+`memory/` 目录下的 `.md` / `.txt` / `.json` / `.jsonl` 文件会**全文注入** system prompt（见 `pyclaw/agent.py` 的 `memory_text()`）。把持久事实写进去，下次启动 AI 就记得。
+
+```
+memory/notes/
+  creator.txt     # 关于用户的事实
+  site.txt        # 环境、地址等
 ```
 
 支持 `exit` 或 `quit` 退出对话。
@@ -40,6 +59,11 @@ python main.py
 | `API\_KEY` | API 密钥 |
 | `ENDPOINT` | API 端点 URL（兼容 OpenAI 格式） |
 | `MODEL` | 模型名称 |
+| `PROVIDER` | 供应商预设；选 `custom` 时只用 `ENDPOINT` |
+| `APPROVAL\_MODE` | `request` / `auto` / `full` 三档权限 |
+| `SHELL` | `auto` = WSL > Git Bash > PowerShell > CMD |
+
+完整键位见 `pyclaw/config.py` 的 `SCHEMA`。
 
 ## 许可证
 

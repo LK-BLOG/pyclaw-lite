@@ -15,7 +15,11 @@ if ! command -v "$PY" >/dev/null 2>&1; then
 fi
 
 echo "==> installing dependencies"
-"$PY" -m pip install --quiet --upgrade openai pytest
+# Runtime: openai (API), prompt_toolkit + rich (the TUI, which is the default entry point).
+# Without prompt_toolkit/rich `python main.py` dies on `from pyclaw.tui import TUI`.
+"$PY" -m pip install --quiet --upgrade openai prompt_toolkit rich
+echo "==> installing dev dependencies"
+"$PY" -m pip install --quiet --upgrade pytest
 
 echo "==> preparing directories"
 mkdir -p "$ROOT/history/sessions" "$ROOT/history/tool" "$ROOT/history/cache" "$ROOT/memory/notes" "$ROOT/plugins"
@@ -35,8 +39,8 @@ cat <<'DONE'
 Done. Next:
   ./install.sh                     # safe to re-run
   python main.py                   # TUI
-  python main.py --plain           # plain line-based CLI
+  python main.py --plain           # plain line-based CLI (no prompt_toolkit/rich needed)
   python main.py --continue        # resume the last session
 
-No API key yet? Start the WebUI and it walks you through setup.
+No API key yet? Put one in pyclaw.json before the first run.
 DONE
