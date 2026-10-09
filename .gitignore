@@ -1,4 +1,4 @@
-﻿pyclaw.json
+pyclaw.json
 skills/*
 !skills/.gitkeep
 __pycache__/
@@ -11,4 +11,30 @@ memory/
 
 # Session logs (full conversation history)
 session_*.jsonl
+
+# Local scratch files (never committed)
+/_e.txt
+/_enc.py
+/_enc.txt
+/_esc.py
+/_ex.py
+/_fitz.py
+/_fix.py
+/_fonts.py
+/_h3.py
+/_hist.py
+/_hola.txt
+/_hola3.txt
+/_insp.py
+/_insp.txt
+/_q.py
+/_q2.py
+/_s3.py
+/_show.py
+/_sum.txt
+/_t.txt
+/_t2.py
+/_zzlog.txt
+/t2.txt
+/zz2.py
 

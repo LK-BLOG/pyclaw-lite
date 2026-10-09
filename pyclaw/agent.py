@@ -11,7 +11,7 @@ from . import context as ctx_mod
 from . import providers
 from .permissions import Policy, derive_rule
 
-MAX_STEPS = 40
+MAX_STEPS = 1000
 CHECKPOINT_PREAMBLE = (
     "This is an automatically generated checkpoint condensing an earlier span of the conversation "
     "to free up context. Treat the captured context as established background and build on it "
@@ -305,7 +305,8 @@ class Agent:
             messages[-1] = {"role": "user", "content": content_blocks}
         tools = self.tool_schemas()
         final_text, seen = "", set()
-        for _ in range(MAX_STEPS):
+        max_steps = int(self.config.get("MAX_AGENT_STEPS", MAX_STEPS) or MAX_STEPS)
+        for _ in range(max_steps):
             if signal is not None and signal.is_set():
                 if self.hooks:
                     self.hooks.run("Interrupt", {"reason": "cancelled by the user"},
@@ -371,7 +372,7 @@ class Agent:
                 if self.needs_compact(messages, tools):
                     messages = self.compact(messages, tools, emit)
         else:
-            emit({"type": "notice", "text": f"stopped after {MAX_STEPS} steps"})
+            emit({"type": "notice", "text": f"stopped after {max_steps} steps"})
         emit({"type": "usage", "usage": self.last_usage,
               "breakdown": ctx_mod.breakdown(messages, tools, self.system_prompt(),
                                              self.last_usage.get("prompt_tokens", 0),

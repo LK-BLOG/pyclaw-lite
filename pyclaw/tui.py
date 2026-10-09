@@ -58,6 +58,7 @@ class TUI(CLI):
         self.flow: list[tuple[str, str, str]] = []
         self.session = PromptSession()
         self.last = {"ms": 0, "chars": 0}
+        self._status = None
 
     # ---------------------------------------------------------------- chrome
 
