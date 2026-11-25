@@ -12,7 +12,7 @@ import urllib.request
 
 PROTOCOL_VERSION = "2024-11-05"
 DEFAULT_TIMEOUT = 30.0
-CLIENT = {"name": "pyclaw-lite", "version": "0.0.1-beta.2"}
+CLIENT = {"name": "pyclaw-lite", "version": "0.0.2"}
 
 
 def qualify(server, tool):
